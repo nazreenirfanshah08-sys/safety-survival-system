@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAFETY & SURVIVAL SYSTEM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:Rajdhani,Arial,sans-serif;color:#eafaff;background:radial-gradient(circle at 50% 20%,rgba(0,190,255,.16),transparent 32%),radial-gradient(circle at 20% 80%,rgba(0,255,170,.08),transparent 25%),#02080d;overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.16;background-image:linear-gradient(rgba(70,220,255,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(70,220,255,.16) 1px,transparent 1px);background-size:45px 45px}
+.container{width:min(1200px,94%);margin:auto;padding:28px 0 45px;position:relative}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:15px}
+.status{font-family:Orbitron;font-size:12px;letter-spacing:2px;color:#8dffda}.status span{display:inline-block;width:9px;height:9px;border-radius:50%;background:#62ffc9;box-shadow:0 0 14px #62ffc9;margin-right:8px}
+h1{font-family:Orbitron;margin:22px 0 5px;font-size:clamp(28px,5vw,54px);letter-spacing:2px;text-shadow:0 0 25px rgba(0,210,255,.45)}
+.subtitle{color:#8da9b7;font-size:18px;margin-bottom:25px}
+.dashboard{display:grid;grid-template-columns:1fr 2fr 1fr;gap:18px;align-items:stretch}
+.panel,.viewer-card{border:1px solid rgba(57,217,255,.28);background:rgba(4,18,27,.82);box-shadow:0 0 30px rgba(0,150,255,.08),inset 0 0 30px rgba(0,180,255,.025);border-radius:14px}
+.panel{padding:18px}.panel h2{font-family:Orbitron;font-size:14px;letter-spacing:1px;color:#62dcff;margin:0 0 15px}
+.info-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:15px}.ok{color:#6dffcf}
+.viewer-card{padding:14px;position:relative}
+.viewer{position:relative;width:100%;aspect-ratio:3/4;overflow:hidden;border-radius:10px;background:#02070c;touch-action:none;user-select:none;cursor:grab}
+.viewer.dragging{cursor:grabbing}
+#interactiveLayer{
+  position:absolute;
+  inset:0;
+  transform-origin:center center;
+  transform:scale(1);
+  transition:transform .18s ease;
+}
+#viewerImage{width:100%;height:100%;object-fit:cover;display:block}
+.viewer:after{content:"DRAG / SWIPE TO ROTATE 360°";position:absolute;left:50%;bottom:12px;transform:translateX(-50%);padding:7px 13px;border:1px solid rgba(98,220,255,.35);background:rgba(0,8,13,.72);border-radius:20px;color:#a7dcea;font-size:11px;letter-spacing:1.3px;white-space:nowrap;pointer-events:none}
+.controls{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:12px}
+button.control{border:1px solid rgba(76,220,255,.35);background:#071923;color:#bdefff;padding:9px 14px;border-radius:8px;font-family:Rajdhani;font-weight:700;cursor:pointer}
+button.control:hover{background:#0c2938;box-shadow:0 0 16px rgba(76,220,255,.2)}
+.hint{text-align:center;color:#7894a0;font-size:13px;margin-top:10px}
+.equipment{display:grid;grid-template-columns:1fr;gap:8px}
+.equipment button{width:100%;text-align:left}
+
+/* Clickable hotspots on the FRONT VIEW */
+.hotspot{position:absolute;width:44px;height:44px;border-radius:50%;border:2px solid #55e6ff;background:rgba(55,210,255,.17);box-shadow:0 0 10px #35d8ff,0 0 28px rgba(35,216,255,.5);z-index:5;cursor:pointer;display:flex;align-items:center;justify-content:center;animation:pulse 1.5s infinite}
+.hotspot:before{content:"+";font-family:Orbitron;font-size:22px;color:#fff}
+.hotspot:hover{background:rgba(55,210,255,.4);transform:translateX(-50%) scale(1.08)}
+.hotspot .tag{position:absolute;left:48px;top:4px;white-space:nowrap;font-family:Orbitron;font-size:10px;letter-spacing:1px;padding:6px 9px;border:1px solid rgba(85,230,255,.35);background:rgba(2,12,19,.92);border-radius:5px;color:#dffaff}
+.hotspot.helmet{top:10%;left:50%;transform:translateX(-50%)}
+.hotspot.camera{top:27%;left:50%;transform:translateX(-50%)}
+.hotspot.radio{top:23%;left:65%}
+.hotspot.wrist{top:43%;left:71%}
+.hotspot.shirt{top:62%;left:40%}
+@keyframes pulse{50%{box-shadow:0 0 18px #35d8ff,0 0 42px rgba(35,216,255,.7)}}
+.front-hint{display:none;position:absolute;left:50%;top:15px;transform:translateX(-50%);z-index:8;background:rgba(2,10,15,.9);border:1px solid rgba(98,220,255,.35);padding:7px 12px;border-radius:20px;color:#a9ddea;font-size:12px;white-space:nowrap}
+
+/* Popup box */
+.modal{display:none;position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.76);align-items:center;justify-content:center;padding:20px}
+.modal.show{display:flex}
+.modal-box{width:min(560px,100%);border:1px solid #43dfff;border-radius:15px;background:linear-gradient(145deg,#061923,#02080d);box-shadow:0 0 45px rgba(0,200,255,.25);padding:25px;position:relative}
+.modal-box h3{font-family:Orbitron;color:#63e4ff;margin:0 35px 12px 0;font-size:20px}
+.modal-box p{color:#b8cbd2;line-height:1.65;font-size:17px;margin:0}
+.close{position:absolute;right:15px;top:10px;background:none;border:0;color:#8deaff;font-size:29px;cursor:pointer}
+.modal-label{font-family:Orbitron;font-size:10px;letter-spacing:2px;color:#65ffce;margin-bottom:8px}
+
+@media(max-width:900px){
+ .dashboard{grid-template-columns:1fr}
+ .panel.left{order:2}.viewer-card{order:1}.panel.right{order:3}
+ .viewer{max-height:none}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="topbar">
+    <div class="status"><span></span>SYSTEM ONLINE</div>
+    <div style="color:#71909d;font-size:13px;letter-spacing:1px">INTERACTIVE EQUIPMENT INTERFACE</div>
+  </div>
+
+  <h1>SAFETY &amp; SURVIVAL SYSTEM</h1>
+  <div class="subtitle">Smart tactical equipment for enhanced safety, communication &amp; situational awareness.</div>
+
+  <div class="dashboard">
+    <div class="panel left">
+      <h2>SYSTEM STATUS</h2>
+      <div class="info-row"><span>Helmet</span><span class="ok">ACTIVE</span></div>
+      <div class="info-row"><span>Body Camera</span><span class="ok">ACTIVE</span></div>
+      <div class="info-row"><span>Health Monitoring Bracelet</span><span class="ok">ACTIVE</span></div>
+      <div class="info-row"><span>Smart Inner Shirt</span><span class="ok">ACTIVE</span></div>
+      <div class="info-row"><span>Walkie-Talkie</span><span class="ok">ACTIVE</span></div>
+      <div class="info-row"><span>360° Viewer</span><span class="ok">READY</span></div>
+    </div>
+
+    <div class="viewer-card">
+      <div class="viewer" id="viewer">
+        <div class="interactive-layer" id="interactiveLayer">
+          <img id="viewerImage" src="safety-01.jpg" alt="Safety Survival System 360 view">
+
+          <button class="hotspot helmet" data-type="helmet" aria-label="Helmet">
+            <span class="tag">HELMET</span>
+          </button>
+          <button class="hotspot camera" data-type="camera" aria-label="Body Camera">
+            <span class="tag">BODY CAMERA</span>
+          </button>
+          <button class="hotspot shirt" data-type="shirt" aria-label="Smart Inner Shirt">
+            <span class="tag">SMART INNER SHIRT</span>
+          </button>
+          <button class="hotspot wrist" data-type="wrist" aria-label="Health Monitoring Bracelet">
+            <span class="tag">HEALTH MONITORING BRACELET</span>
+          </button>
+          <button class="hotspot radio" data-type="radio" aria-label="Walkie-Talkie">
+            <span class="tag">WALKIE-TALKIE</span>
+          </button>
+        </div>
+
+        <div class="front-hint" id="frontHint">RETURN TO FRONT VIEW TO SELECT EQUIPMENT</div>
+      </div>
+
+      <div class="controls">
+        <button class="control" id="prev">◀ LEFT</button>
+        <button class="control" id="reset">⟳ FRONT</button>
+        <button class="control" id="next">RIGHT ▶</button>
+        <button class="control" id="zoomOut">− ZOOM</button>
+        <button class="control" id="zoomIn">＋ ZOOM</button>
+      </div>
+      <div class="hint">Swipe / drag the figure left or right to rotate through the 8 views.</div>
+    </div>
+
+    <div class="panel right">
+      <h2>CLICK TO EXPLORE</h2>
+      <div class="equipment">
+        <button class="control" data-type="helmet">🪖 SMART HELMET</button>
+        <button class="control" data-type="camera">📷 BODY CAMERA</button>
+        <button class="control" data-type="wrist">⌚ HEALTH MONITORING BRACELET</button>
+        <button class="control" data-type="shirt">🛡️ SMART INNER SHIRT</button>
+        <button class="control" data-type="radio">📡 SMART WALKIE-TALKIE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <button class="close" id="close">×</button>
+    <div class="modal-label">TECHNOLOGY INFORMATION</div>
+    <h3 id="modalTitle"></h3>
+    <p id="modalText"></p>
+  </div>
+</div>
+
+<script>
+const frames=["safety-01.jpg","safety-02.jpg","safety-03.jpg","safety-04.jpg","safety-05.jpg","safety-06.jpg","safety-07.jpg","safety-08.jpg"];
+
+const data={
+ helmet:{
+  title:"🪖 SMART NIGHT-VISION HELMET",
+  text:"The helmet combines head protection with night-vision technology to help the user see and operate in low-light environments. The concept is designed to improve visibility, awareness and safety during night operations."
+ },
+ camera:{
+  title:"📷 BODY CAMERA",
+  text:"The body camera is designed to record activities from the user's point of view. It can support incident documentation, situational awareness and later review of recorded events."
+ },
+ wrist:{
+  title:"⌚ HEALTH MONITORING BRACELET",
+  text:"The smart wristband is a concept health-monitoring device designed to monitor heart rate and blood pressure. The information can help the user keep track of their physical condition during an operation."
+ },
+ shirt:{
+  title:"🛡️ SMART INNER SHIRT",
+  text:"The Smart Inner Shirt is a concept wearable system designed to detect possible injuries or abnormal physical conditions. It can provide useful information about the wearer’s condition and support faster response during an operation."
+ },
+ radio:{
+  title:"📡 SMART WALKIE-TALKIE",
+  text:"The walkie-talkie provides quick voice communication between team members. It is designed to support coordination and allow important information to be communicated rapidly during operations."
+ }
+};
+
+const viewer=document.getElementById("viewer");
+const image=document.getElementById("viewerImage");
+const interactiveLayer=document.getElementById("interactiveLayer");
+const hotspots=[...document.querySelectorAll(".hotspot")];
+const frontHint=document.getElementById("frontHint");
+let frame=0,startX=0,startFrame=0,dragging=false,zoom=1;
+
+function update(){
+ image.src=frames[frame];
+ hotspots.forEach(h=>h.style.display=frame===0?"flex":"none");
+ frontHint.style.display=frame===0?"none":"block";
+}
+function next(){frame=(frame+1)%frames.length;update()}
+function prev(){frame=(frame-1+frames.length)%frames.length;update()}
+function applyZoom(){
+ interactiveLayer.style.transform=`scale(${zoom})`;
+}
+function reset(){frame=0;zoom=1;applyZoom();update()}
+function zoomIn(){zoom=Math.min(zoom+.15,2);applyZoom()}
+function zoomOut(){zoom=Math.max(zoom-.15,.75);applyZoom()}
+
+document.getElementById("next").onclick=next;
+document.getElementById("prev").onclick=prev;
+document.getElementById("reset").onclick=reset;
+document.getElementById("zoomIn").onclick=zoomIn;
+document.getElementById("zoomOut").onclick=zoomOut;
+
+function openInfo(type){
+ document.getElementById("modalTitle").textContent=data[type].title;
+ document.getElementById("modalText").textContent=data[type].text;
+ document.getElementById("modal").classList.add("show");
+}
+document.querySelectorAll("[data-type]").forEach(el=>{
+ el.addEventListener("click",e=>{e.stopPropagation();openInfo(el.dataset.type)})
+});
+document.getElementById("close").onclick=()=>document.getElementById("modal").classList.remove("show");
+document.getElementById("modal").addEventListener("click",e=>{if(e.target.id==="modal")e.currentTarget.classList.remove("show")});
+
+viewer.addEventListener("pointerdown",e=>{
+ if(e.target.closest(".hotspot"))return;
+ dragging=true;startX=e.clientX;startFrame=frame;
+ viewer.classList.add("dragging");viewer.setPointerCapture(e.pointerId);
+});
+viewer.addEventListener("pointermove",e=>{
+ if(!dragging)return;
+ const distance=e.clientX-startX;
+ const steps=Math.floor(Math.abs(distance)/35);
+ if(steps>0){
+  frame=distance<0?(startFrame+steps)%frames.length:(startFrame-steps+frames.length)%frames.length;
+  update();
+ }
+});
+viewer.addEventListener("pointerup",()=>{dragging=false;viewer.classList.remove("dragging")});
+viewer.addEventListener("pointercancel",()=>{dragging=false;viewer.classList.remove("dragging")});
+frames.forEach(src=>{const p=new Image();p.src=src});
+update();
+</script>
+</body>
+</html>
